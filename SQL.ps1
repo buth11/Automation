@@ -171,14 +171,105 @@ $rowcount = "Select * from sys.dm_exec_sessions;"
 
 #Create Table
 $createTable = "Create Table dbo.Blah (BlahId int identity (1, 1) Constraint PK_Blah Primary Key, Document varbinary(max));"
-$addRow = "INSERT INTO Blah VALUES (1, 'A1');"
+
 
 Invoke-Sqlcmd -ServerInstance IT02 -Database Biosystem -Query $rowcount | Where-Object sysadmin -eq 1 | Select-Object -Property loginname | ft
 Invoke-Sqlcmd -ServerInstance IT02 -Database Biosystem -Query $rowcount | Where-Object host_name -eq "it02" | ft
 
 Invoke-Sqlcmd -ServerInstance IT02 -Database YourDB -Query $createTable
+
+#Add row
 Invoke-Sqlcmd -ServerInstance IT02 -Database YourDB -Query "INSERT INTO Blah (Document) VALUES (999);"
+
 Invoke-Sqlcmd -ServerInstance IT02 -Database YourDB -Query "select * from dbo.Blah"
-$resultSet
 
 
+#Delete row
+Invoke-Sqlcmd -ServerInstance IT02 -Database YourDB -Query "DELETE FROM Blah WHERE BlahId = 2;"
+
+#Delete all rows
+Invoke-Sqlcmd -ServerInstance IT02 -Database YourDB -Query "DELETE FROM Blah;"
+
+
+
+
+
+$connString = "Data Source=IT02;Database=Biosystem;User ID=sa;Password=Butcher1985"
+
+    #Create a SQL connection object
+    $conn = New-Object System.Data.SqlClient.SqlConnection $connString
+    $conn.Open()
+    $sqlQuery = "select * from dbo.BS_USER;"
+    $command = New-Object System.Data.SqlClient.SqlCommand($sqlQuery, $conn)
+    $reader = $command.ExecuteReader()
+    $table = $reader.GetSchemaTable()
+    $sepatartor = ";"
+    $csv="c:\tmp\test.csv"
+    $encode = "UTF8"
+    $sw = New-Object System.IO.StreamWriter($csv, $false, [Text.Encoding]::UTF8)
+    $columns = $table.ColumnName -join ';'
+    $sw.WriteLine($columns)
+    
+    while ($reader.Read()) {
+    $row=""
+    $cell=""
+        for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+            $cell=$reader.GetValue($i).ToString()
+            $cell=$cell.Replace($sepatartor, " ")
+            $row+=$cell
+            if ($i -lt $reader.FieldCount -1) {
+                $row+=$sepatartor
+            }
+
+        }
+        $row=$row.Replace("`r`n"," ")
+        $sw.WriteLine($row)
+
+    }
+    
+
+  <#  $tables = @()
+while ($reader.Read()) {
+    $tables += $reader["test"]
+}#>
+$sw.Close()
+
+    $conn.Close()
+
+    Import-Module "C:\Users\bs\Documents\PowerShell\FirebirdSql.Data.FirebirdClient.dll"
+
+
+    $connStringFB = "User ID = sysdba; Password = masterkey;Database=localhost:c:\\db\\baza\\bujalski.fdb; DataSource=localhost;Charset=NONE;"
+    $connfb = New-Object FirebirdSql.Data.FirebirdClient.FbConnection $connStringFB
+    $connFb.Open()
+
+    $sqlQuery = "select * from kontrah;"
+    $command = New-Object FirebirdSql.Data.FirebirdClient.FbCommand($sqlQuery, $connFb)
+    $reader = $command.ExecuteReader()
+    $table = $reader.GetSchemaTable()
+    $sepatartor = ";"
+    $csv="c:\tmp\testFB.csv"
+    $encode = "UTF8"
+    $sw = New-Object System.IO.StreamWriter($csv, $false, [Text.Encoding]::UTF8)
+    $columns = $table.ColumnName -join ';'
+    $sw.WriteLine($columns)
+    
+    while ($reader.Read()) {
+    $row=""
+    $cell=""
+        for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+            $cell=$reader.GetValue($i).ToString()
+            $cell=$cell.Replace($sepatartor, " ")
+            $row+=$cell
+            if ($i -lt $reader.FieldCount -1) {
+                $row+=$sepatartor
+            }
+
+        }
+        $row=$row.Replace("`r`n"," ")
+        $sw.WriteLine($row)
+
+    }
+    $sw.Close()
+
+    $connFb.Close()
